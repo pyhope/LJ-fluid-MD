@@ -1,0 +1,46 @@
+units metal
+boundary p p p
+atom_style atomic
+
+read_data nve.lmp
+
+neighbor 0.1 bin
+neigh_modify delay 10 check no
+
+pair_style lj/cut 15.0
+pair_coeff 1 1 0.0103 3.405 15.0
+
+thermo 100
+thermo_style custom step temp pe ke etotal press density
+
+variable i loop 1000
+
+# Define lable for the loop
+label loop_start
+
+reset_timestep 0
+compute msd_Ar_${i} all msd
+compute vacf_Ar_${i} all vacf
+fix ${i} all nve
+fix store_msd_Ar_${i} all vector 1 c_msd_Ar_${i}[4]
+fix store_vacf_Ar_${i} all vector 1 c_vacf_Ar_${i}[4]
+fix msd_${i} all ave/time 1 1 1 c_msd_Ar_${i}[4] file ./msd/msd.${i}.dat
+fix vacf_${i} all ave/time 1 1 1 c_vacf_Ar_${i}[4] file ./vacf/vacf.${i}.dat
+fix tmp_${i} all ave/time 1 1000 1000 c_thermo_temp file ./temp/temp.${i}.dat
+
+dump d_${i} all custom 1000 ./dump/argon.${i}.dump id type x y z vx vy vz
+
+run 10000
+
+undump d_${i}
+unfix store_msd_Ar_${i}
+unfix store_vacf_Ar_${i}
+unfix msd_${i}
+unfix vacf_${i}
+unfix tmp_${i}
+unfix ${i}
+
+next i
+
+# Repeat simulation 10 times
+jump SELF loop_start

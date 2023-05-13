@@ -1,0 +1,26 @@
+variable T equal 94.0
+
+units metal
+boundary p p p
+atom_style atomic
+
+read_data nve.lmp
+
+neighbor 0.1 bin
+neigh_modify delay 10 check no
+
+pair_style lj/cut 15.0
+pair_coeff 1 1 0.0103 3.405 15.0
+
+thermo 1000
+thermo_style custom step temp pe ke etotal press density
+
+# Calculate the kinetic energy
+compute g2 all rdf 1000
+fix 1 all nve
+fix temp_1 all ave/time 1 10000 10000 c_thermo_temp file temp.dat
+fix g2_1 all ave/time 1 5000000 5000000 c_g2[*] file rdf.dat mode vector
+
+dump 1 all custom 1000 argon.dump id type x y z vx vy vz
+
+run 5000000
